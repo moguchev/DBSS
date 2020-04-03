@@ -1,11 +1,11 @@
 #!/bin/bash
 # EXAMPLES:
-# ./script.sh -f 1.txt --out 2.txt --err 3.txt ./hello
-# ./script.sh --out 1.txt --err 2.txt ./hello
-# ./script.sh --out 1.txt --err 1.txt ./hello
-# ./script.sh --out 1.txt ./hello
-# ./script.sh --err 1.txt ./hello
-# ./script.sh ./hello
+# ./script.sh -f 1.txt --out 2.txt --err 3.txt ./hello [args...]
+# ./script.sh --out 1.txt --err 2.txt ./hello [args...]
+# ./script.sh --out 1.txt --err 1.txt ./hello [args...]
+# ./script.sh --out 1.txt ./hello [args...]
+# ./script.sh --err 1.txt ./hello [args...]
+# ./script.sh ./hello [args...]
 
 while [ -n "$1" ]
 do
@@ -18,6 +18,7 @@ case "$1" in
         echo "file: $file"
         shift ;;
     *) prog="$1"
+    
         break ;;
 esac
 shift
@@ -48,7 +49,7 @@ then
     exec < $file 
 fi
 
-echo $($prog)
+echo $($prog $@)
 code=$?
 
 echo $code >&6
