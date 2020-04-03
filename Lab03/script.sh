@@ -17,3 +17,11 @@ esac
 shift
 done
 
+if out
+exec 1>out
+fi
+if err
+exec 2>err
+fi
+
+
