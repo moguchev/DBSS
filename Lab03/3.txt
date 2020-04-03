@@ -1,1 +1,2 @@
-STDERR: 1230
+STDERR: 123
+Exit code: 0

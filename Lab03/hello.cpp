@@ -1,9 +1,9 @@
 #include <stdio.h>
 
-int main(int argc, char *argv[]){
+int main(int argc, char** argv){
     
     fprintf(stdout,"Программа %s запущена c аргуменами:",  argv[0]);
-    for(size_t i = 1; argv[++i] != NULL;)
+    for(size_t i = 0; argv[++i] != NULL;)
         printf(" %s", argv[i]);
     fprintf(stdout, "\n\r");
 

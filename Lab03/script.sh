@@ -15,7 +15,6 @@ case "$1" in
     --err) err="$2"
         shift ;;
     -f) file="$2"
-        echo "file: $file"
         shift ;;
     *) prog="$1"
     
@@ -52,17 +51,17 @@ fi
 echo $($prog $@)
 code=$?
 
-echo $code >&6
+echo "Exit code: $code" >&6
 
 if [[ -n $out ]]
 then
-    echo $code >&1
+    echo "Exit code: $code" >&1
 fi
 if [[ -n $err ]]
 then
     if [[ $out != $err ]]
     then
-        echo $code >&2
+        echo "Exit code: $code" >&2
     fi
 fi
 
