@@ -5,6 +5,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include <string>
 #include <iostream>
@@ -32,9 +35,12 @@ int main(int argc, char** argv)
         exit(2);
     }
 
+    std::cout << "Connected to: " << inet_ntoa(addr.sin_addr) 
+        << ':' << PORT << std::endl;
+
     std::string message;
     while(true) {
-        std::cin >> message;
+        std::getline(std::cin, message);
         if (message == "END") {
             break;
         }

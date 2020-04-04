@@ -7,10 +7,15 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include <algorithm>
 #include <iostream>
+#include <fstream>
 #include <set>
+#include <unordered_map>
 
 const uint16_t PORT = 3425;
 const size_t BUFF_SIZE = 1024;
@@ -35,7 +40,7 @@ int main(int argc, char** argv) {
     addr.sin_port = htons(PORT); // порт
     addr.sin_addr.s_addr = INADDR_ANY; // принимаем любое сообщение
 
-    // cвязываем сокет с адресом
+    //  связываем сокет с адресом и номером порта 
     if(bind(listener, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
         perror("bind");
         exit(2);
@@ -46,6 +51,13 @@ int main(int argc, char** argv) {
     
     std::set<int> clients;
     clients.clear();
+    std::unordered_map<int, sockaddr_in> addresses;
+    addresses.clear();
+
+    std::ofstream out("statistics.txt", std::ios::app);
+    
+    std::cout << "Server started at: " << inet_ntoa(addr.sin_addr) 
+        << ':' << PORT << std::endl;
 
     while(true) {
         // Заполняем множество сокетов
@@ -58,7 +70,7 @@ int main(int argc, char** argv) {
 
         // Задаём таймаут
         timeval timeout;
-        timeout.tv_sec = 15;
+        timeout.tv_sec = 60;
         timeout.tv_usec = 0;
 
         // Ждём события в одном из сокетов
@@ -74,15 +86,19 @@ int main(int argc, char** argv) {
         // Проверяем содержится ли дескриптор listener в множестве readset
         if(FD_ISSET(listener, &readset)) {
             // Поступил новый запрос на соединение, используем accept
-            int sock = accept(listener, NULL, NULL);
-            if(sock < 0) {
+            sockaddr_in cs_addr;
+            socklen_t cs_addrsize = sizeof (cs_addr);
+  
+            int client_socket= accept(listener, (struct sockaddr *) &cs_addr,  &cs_addrsize);
+            if(client_socket < 0) {
                 perror("accept");
                 exit(3);
             }
             // делаем неблокирующим
-            fcntl(sock, F_SETFL, O_NONBLOCK);
+            fcntl(client_socket, F_SETFL, O_NONBLOCK);
 
-            clients.insert(sock);
+            clients.insert(client_socket);
+            addresses[client_socket] = cs_addr;
         }
 
         for(set_iter it = clients.begin(); it != clients.end(); it++) {
@@ -90,7 +106,7 @@ int main(int argc, char** argv) {
                 // чистим буфер
                 memset(buf, 0, sizeof(char)*BUFF_SIZE);
                 // Поступили данные от клиента, читаем их
-                int bytes_read = recv(*it, buf, BUFF_SIZE, 0);
+                ssize_t bytes_read = recv(*it, buf, BUFF_SIZE, 0);
 
                 if(bytes_read <= 0) {
                     // Соединение разорвано, удаляем сокет из множества
@@ -98,12 +114,26 @@ int main(int argc, char** argv) {
                     clients.erase(*it);
                     continue;
                 }
-                std::cout << buf << std::endl;
+
+                sockaddr_in addr = addresses[*it];
+
+                std::cout << inet_ntoa(addr.sin_addr) << ':' << addr.sin_port 
+                    << ' ' << buf << std::endl;
+
+                if (out.is_open()) {
+                    out << "RECIEVE " << inet_ntoa(addr.sin_addr) << ':' << addr.sin_port 
+                    << ' ' << buf << std::endl;
+                }
+                if (out.is_open()) {
+                    out << "SEND TO " << inet_ntoa(addr.sin_addr) << ':' << addr.sin_port 
+                    << ' ' << buf << std::endl;
+                }
                 // Отправляем данные обратно клиенту
                 send(*it, buf, bytes_read, 0);
             }
         }
     }
     
+    out.close();
     return EXIT_SUCCESS;
 }
